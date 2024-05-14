@@ -3,9 +3,10 @@
 // Parses page JS for event handlers
 // Tests if every element with a mouse event handler
 // is keyboard reachable. If not, then it adds keyboard support for
-// both evter and space (assumes everything may be a button),
+// both enter and space (assumes everything may be a button),
 // and gives a role of "button" if the element doesn't have any
-// explict role defined.
+// explict role defined. A thick focus outline on :focus is also 
+// supplied.
 ////////////////////////////////////////////////////////////////////
 
 
@@ -23,6 +24,57 @@ function stripComments(code) {
 
     return code;
 }
+
+function getEffectiveBackgroundColor(element) {
+    let backgroundColor = window.getComputedStyle(element).backgroundColor;
+  
+    if (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+      if (element.parentElement) {
+        return getEffectiveBackgroundColor(element.parentElement);
+      } else {
+        return 'rgba(0, 0, 0, 0)'; // Fallback to transparent if no parent element
+      }
+    }
+  
+    return backgroundColor;
+  }
+
+let contrastClassDescriminator = 0;
+function setHighContrastOutline(element) {
+    // Get the computed background color of the element
+    const backgroundColor = getEffectiveBackgroundColor(element);
+    console.log('Found bg: ' + backgroundColor);
+  
+    // Parse the RGB values from the background color string
+    const rgbValues = backgroundColor.match(/\d+/g).map(Number);
+    const [red, green, blue] = rgbValues;
+    
+    // Calculate the relative luminance of the background color
+    const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    console.log('luminance: ' + luminance);
+  
+    // Determine the contrast color based on the luminance
+    const contrastColor = luminance < 128 ? 'white' : 'black';
+    console.log('Contrast color: ' + contrastColor);
+
+    // Create a unique class name for the element
+    const className = `high-contrast-outline-${Date.now()}${contrastClassDescriminator++}`;
+  
+    // Create a style element
+    const style = document.createElement('style');
+    style.textContent = `
+      .${className}:focus {
+        outline: 4px solid ${contrastColor};
+        outline-offset: -2px;
+      }
+    `;
+  
+    // Append the style element to the document head
+    document.head.appendChild(style);
+  
+    // Add the class name to the element
+    element.classList.add(className);
+  }
 
 
 function handleKbInteraction(event) {
@@ -403,10 +455,15 @@ function getSelector(elementRef) {
                 console.log('Element is null, selector: ' + selWithoutBoth.selector + ', xpath: ' + xpath);
             }
             else {
+                
                 if (!elementAtPath.hasAttribute('role')) {
                     elementAtPath.setAttribute('role', 'button'); // force a button role
                 }
+                
             }
+
+            // Ensure there is a focus outline defined for the element
+            setHighContrastOutline(elementAtPath);
         }
 
         console.log('Page Ready!')
