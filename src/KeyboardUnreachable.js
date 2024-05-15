@@ -3,10 +3,9 @@
 // Parses page JS for event handlers
 // Tests if every element with a mouse event handler
 // is keyboard reachable. If not, then it adds keyboard support for
-// both enter and space (assumes everything may be a button),
+// both evter and space (assumes everything may be a button),
 // and gives a role of "button" if the element doesn't have any
-// explict role defined. A thick focus outline on :focus is also 
-// supplied.
+// explict role defined.
 ////////////////////////////////////////////////////////////////////
 
 
@@ -41,9 +40,15 @@ function getEffectiveBackgroundColor(element) {
 
 let contrastClassDescriminator = 0;
 function setHighContrastOutline(element) {
+
     // Get the computed background color of the element
-    const backgroundColor = getEffectiveBackgroundColor(element);
-    console.log('Found bg: ' + backgroundColor);
+    let backgroundColor;
+    if (element.parentElement) {
+        backgroundColor = getEffectiveBackgroundColor(element.parentElement);
+    }
+    else {
+        backgroundColor = getEffectiveBackgroundColor(element);
+    } 
   
     // Parse the RGB values from the background color string
     const rgbValues = backgroundColor.match(/\d+/g).map(Number);
@@ -51,11 +56,9 @@ function setHighContrastOutline(element) {
     
     // Calculate the relative luminance of the background color
     const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-    console.log('luminance: ' + luminance);
   
     // Determine the contrast color based on the luminance
     const contrastColor = luminance < 128 ? 'white' : 'black';
-    console.log('Contrast color: ' + contrastColor);
 
     // Create a unique class name for the element
     const className = `high-contrast-outline-${Date.now()}${contrastClassDescriminator++}`;
